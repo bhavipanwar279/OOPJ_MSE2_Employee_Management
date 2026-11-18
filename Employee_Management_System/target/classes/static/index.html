@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Management System - Spring Boot REST API</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            margin: 25px;
+            color: #222;
+            background-color: #fcfcfc;
+        }
+
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #555;
+            padding-bottom: 6px;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            display: flex;
+            gap: 25px;
+            flex-wrap: wrap;
+        }
+
+        .panel {
+            background-color: #ffffff;
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 4px;
+        }
+
+        .form-panel {
+            flex: 1;
+            min-width: 300px;
+            max-width: 420px;
+        }
+
+        .table-panel {
+            flex: 2;
+            min-width: 480px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .form-group input {
+            width: 95%;
+            padding: 7px;
+            border: 1px solid #999;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+
+        button {
+            padding: 8px 14px;
+            font-size: 13px;
+            cursor: pointer;
+            border: 1px solid #666;
+            border-radius: 3px;
+            background-color: #f0f0f0;
+            margin-right: 5px;
+            margin-top: 5px;
+        }
+
+        button:hover {
+            background-color: #e0e0e0;
+        }
+
+        .btn-primary {
+            background-color: #0056b3;
+            color: white;
+            border-color: #004085;
+        }
+
+        .btn-primary:hover {
+            background-color: #004085;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+            border-color: #bd2130;
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+
+        .btn-danger:hover {
+            background-color: #bd2130;
+        }
+
+        .btn-edit {
+            background-color: #e2e3e5;
+            border-color: #d6d8db;
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        table, th, td {
+            border: 1px solid #bbb;
+        }
+
+        th {
+            background-color: #eaeaea;
+            padding: 8px;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        td {
+            padding: 7px 8px;
+            font-size: 13px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .status-box {
+            margin-top: 15px;
+            padding: 10px;
+            font-size: 13px;
+            border: 1px solid #ddd;
+            background-color: #f5f5f5;
+            border-radius: 3px;
+            font-family: Consolas, monospace;
+        }
+
+        .search-box {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .search-box input {
+            padding: 6px;
+            border: 1px solid #999;
+            border-radius: 3px;
+            width: 160px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Employee Management System</h2>
+    <div class="subtitle">Spring Boot REST API Client &bull; MSE-2 Practical Project</div>
+
+    <div class="container">
+        <!-- Left: Form to Add / Update Employee -->
+        <div class="panel form-panel">
+            <h3 id="formTitle" style="margin-top:0; font-size:16px;">Add New Employee</h3>
+            <form id="employeeForm" onsubmit="handleFormSubmit(event)">
+                <div class="form-group">
+                    <label for="empId">Employee ID:</label>
+                    <input type="number" id="empId" placeholder="e.g. 104" required>
+                </div>
+                <div class="form-group">
+                    <label for="empName">Employee Name:</label>
+                    <input type="text" id="empName" placeholder="e.g. Rajesh Kumar" required>
+                </div>
+                <div class="form-group">
+                    <label for="empDept">Department:</label>
+                    <input type="text" id="empDept" placeholder="e.g. Accounts / IT" required>
+                </div>
+                <div class="form-group">
+                    <label for="empSalary">Salary (INR):</label>
+                    <input type="number" step="0.01" id="empSalary" placeholder="e.g. 55000" required>
+                </div>
+
+                <button type="submit" id="submitBtn" class="btn-primary">Add Employee (POST)</button>
+                <button type="button" id="updateBtn" style="display:none;" class="btn-primary" onclick="handleUpdateSubmit()">Update Employee (PUT)</button>
+                <button type="button" onclick="resetForm()">Clear</button>
+            </form>
+
+            <div class="status-box" id="statusMessage">
+                <strong>Status:</strong> Ready.
+            </div>
+        </div>
+
+        <!-- Right: Employee List Table & Search -->
+        <div class="panel table-panel">
+            <h3 style="margin-top:0; font-size:16px;">Employee Records</h3>
+
+            <div class="search-box">
+                <input type="number" id="searchId" placeholder="Enter ID to search...">
+                <button type="button" onclick="searchById()">Search (GET by ID)</button>
+                <button type="button" onclick="loadAllEmployees()">Refresh / All</button>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 12%;">ID</th>
+                        <th style="width: 32%;">Name</th>
+                        <th style="width: 26%;">Department</th>
+                        <th style="width: 15%;">Salary (INR)</th>
+                        <th style="width: 15%;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="employeeTableBody">
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: #777;">Loading records from API...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api/employees';
+
+        // Load all employees when page loads
+        window.onload = function() {
+            loadAllEmployees();
+        };
+
+        // (c) GET All Employees
+        function loadAllEmployees() {
+            fetch(API_URL)
+                .then(response => {
+                    updateStatus('GET /api/employees', response.status, 'Fetched all employees');
+                    return response.json();
+                })
+                .then(data => {
+                    renderTable(data);
+                })
+                .catch(error => {
+                    updateStatus('GET /api/employees', 'Error', error.message);
+                });
+        }
+
+        // (c) GET Employee by ID
+        function searchById() {
+            const id = document.getElementById('searchId').value.trim();
+            if (!id) {
+                alert('Please enter an employee ID to search.');
+                return;
+            }
+
+            fetch(`${API_URL}/${id}`)
+                .then(response => {
+                    if (response.status === 404) {
+                        updateStatus(`GET ${API_URL}/${id}`, 404, 'Employee not found');
+                        renderTable([]);
+                        return null;
+                    }
+                    updateStatus(`GET ${API_URL}/${id}`, response.status, 'Employee found');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data) {
+                        renderTable([data]);
+                    }
+                })
+                .catch(error => {
+                    updateStatus(`GET ${API_URL}/${id}`, 'Error', error.message);
+                });
+        }
+
+        // (b) POST: Add New Employee
+        function handleFormSubmit(event) {
+            event.preventDefault();
+
+            const employee = {
+                id: parseInt(document.getElementById('empId').value),
+                name: document.getElementById('empName').value.trim(),
+                department: document.getElementById('empDept').value.trim(),
+                salary: parseFloat(document.getElementById('empSalary').value)
+            };
+
+            fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(employee)
+            })
+            .then(response => {
+                if (response.status === 201 || response.status === 200) {
+                    updateStatus('POST /api/employees', response.status, 'Employee added successfully!');
+                    resetForm();
+                    loadAllEmployees();
+                } else {
+                    updateStatus('POST /api/employees', response.status, 'Failed to add employee');
+                }
+            })
+            .catch(error => {
+                updateStatus('POST /api/employees', 'Error', error.message);
+            });
+        }
+
+        // Populate form for editing
+        function editEmployee(id, name, department, salary) {
+            document.getElementById('empId').value = id;
+            document.getElementById('empId').disabled = true; // ID cannot be changed in PUT
+            document.getElementById('empName').value = name;
+            document.getElementById('empDept').value = department;
+            document.getElementById('empSalary').value = salary;
+
+            document.getElementById('formTitle').innerText = 'Update Employee (ID: ' + id + ')';
+            document.getElementById('submitBtn').style.display = 'none';
+            document.getElementById('updateBtn').style.display = 'inline-block';
+            updateStatus('Form Edit Mode', 'Info', 'Editing ID: ' + id);
+        }
+
+        // (d) PUT: Update Employee
+        function handleUpdateSubmit() {
+            const id = document.getElementById('empId').value;
+            const employeeDetails = {
+                name: document.getElementById('empName').value.trim(),
+                department: document.getElementById('empDept').value.trim(),
+                salary: parseFloat(document.getElementById('empSalary').value)
+            };
+
+            fetch(`${API_URL}/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(employeeDetails)
+            })
+            .then(response => {
+                if (response.ok) {
+                    updateStatus(`PUT /api/employees/${id}`, response.status, 'Employee updated successfully!');
+                    resetForm();
+                    loadAllEmployees();
+                } else {
+                    updateStatus(`PUT /api/employees/${id}`, response.status, 'Update failed (404 Not Found)');
+                }
+            })
+            .catch(error => {
+                updateStatus(`PUT /api/employees/${id}`, 'Error', error.message);
+            });
+        }
+
+        // (e) DELETE: Delete Employee by ID
+        function deleteEmployee(id) {
+            if (!confirm(`Are you sure you want to delete Employee ID: ${id}?`)) {
+                return;
+            }
+
+            fetch(`${API_URL}/${id}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (response.ok) {
+                    updateStatus(`DELETE /api/employees/${id}`, response.status, 'Deleted successfully!');
+                    loadAllEmployees();
+                } else {
+                    updateStatus(`DELETE /api/employees/${id}`, response.status, 'Employee not found (404)');
+                }
+            })
+            .catch(error => {
+                updateStatus(`DELETE /api/employees/${id}`, 'Error', error.message);
+            });
+        }
+
+        function resetForm() {
+            document.getElementById('employeeForm').reset();
+            document.getElementById('empId').disabled = false;
+            document.getElementById('formTitle').innerText = 'Add New Employee';
+            document.getElementById('submitBtn').style.display = 'inline-block';
+            document.getElementById('updateBtn').style.display = 'none';
+        }
+
+        function renderTable(employees) {
+            const tbody = document.getElementById('employeeTableBody');
+            tbody.innerHTML = '';
+
+            if (!employees || employees.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #888;">No employee records found.</td></tr>';
+                return;
+            }
+
+            employees.forEach(emp => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${emp.id}</strong></td>
+                    <td>${emp.name}</td>
+                    <td>${emp.department}</td>
+                    <td>${Number(emp.salary).toFixed(2)}</td>
+                    <td>
+                        <button class="btn-edit" onclick="editEmployee(${emp.id}, '${escapeHtml(emp.name)}', '${escapeHtml(emp.department)}', ${emp.salary})">Edit</button>
+                        <button class="btn-danger" onclick="deleteEmployee(${emp.id})">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateStatus(endpoint, statusCode, note) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.innerHTML = `<strong>API Call:</strong> ${endpoint}<br><strong>HTTP Status:</strong> ${statusCode}<br><strong>Message:</strong> ${note}`;
+        }
+
+        function escapeHtml(text) {
+            return (text || '').replace(/'/g, "\\'");
+        }
+    </script>
+</body>
+</html>
